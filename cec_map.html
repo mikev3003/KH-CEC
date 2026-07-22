@@ -10,6 +10,14 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
 /* ===== app styles ===== */
+
+/* layer control sits under the zoom buttons, left side */
+.leaflet-control-layers{border-radius:7px!important;border:1px solid var(--line)!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.14)!important;font-family:'DM Sans',system-ui,sans-serif!important}
+.leaflet-control-layers-expanded{padding:8px 11px 8px 9px!important;font-size:12.5px!important;color:var(--ink)!important}
+.leaflet-control-layers-selector{margin-right:5px!important}
+#map.dark-base + #stats, #map.dark-base ~ #stats{background:rgba(255,255,255,.97)}
+#map.dark-base ~ #legend{background:rgba(255,255,255,.97)}
 /* ===== charts panel ===== */
 /* Sits directly under the stats card on the right, so it never overlaps it
    and never collides with Leaflet's zoom control on the left. */
@@ -277,10 +285,42 @@ const colOf = c => PALETTE[c] || PALETTE['Unclassified'];
 let map, cluster;
 function boot(){
 map = L.map('map',{zoomControl:true}).setView([-28.8,25.0],5.4);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; OpenStreetMap &copy; CARTO | Data: ARC KH-CEC Database',
-  maxZoom:19, subdomains:'abcd'
-}).addTo(map);
+/* ---- basemaps ---- */
+const BASE = {
+  'Light map': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CARTO | Data: ARC KH-CEC Database',
+    maxZoom:19, subdomains:'abcd'}),
+  'Street map': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap contributors | Data: ARC KH-CEC Database',
+    maxZoom:19, subdomains:'abc'}),
+  'Satellite (RGB)': L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics | Data: ARC KH-CEC Database',
+    maxZoom:19}),
+  'Satellite + labels': L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics | Data: ARC KH-CEC Database',
+      maxZoom:19}),
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{
+      maxZoom:19, subdomains:'abcd'})
+  ])
+};
+BASE['Light map'].addTo(map);
+L.control.layers(BASE, null, {position:'topleft', collapsed:true}).addTo(map);
+
+/* Marker outlines are white, which disappears against dark satellite imagery.
+   DARK_BASE is read by render() so newly created markers get the right stroke,
+   and existing markers are restyled in place when the basemap changes. */
+let DARK_BASE = false;
+map.on('baselayerchange', e => {
+  DARK_BASE = e.name.indexOf('Satellite') === 0;
+  document.getElementById('map').classList.toggle('dark-base', DARK_BASE);
+  if (cluster) cluster.eachLayer(m => {
+    if (m.setStyle && m.rec) m.setStyle(markerStroke());
+  });
+});
+const markerStroke = () => ({ color: DARK_BASE ? '#111827' : '#fff',
+                              weight: DARK_BASE ? 2 : 1.4 });
 
 cluster = L.markerClusterGroup({
   maxClusterRadius:42,
@@ -409,11 +449,12 @@ function render(){
 
   cluster.clearLayers();
   const markers = rows.map(r => {
+    const st = markerStroke();
     const m = L.circleMarker([r.lat,r.lon],{
       radius: r.gs === 'point' ? 6.5 : 5.5,
       fillColor: colOf(r.cls),
-      color: '#fff',
-      weight: 1.4,
+      color: st.color,
+      weight: st.weight,
       opacity: 1,
       fillOpacity: r.gs === 'point' ? 0.9 : 0.55,
       dashArray: r.gs === 'area' ? '2,2' : null

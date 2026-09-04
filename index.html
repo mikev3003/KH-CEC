@@ -386,12 +386,12 @@ function boot(){
 map = L.map('map',{zoomControl:true}).setView([-28.8,25.0],5.4);
 /* ---- basemaps ---- */
 const BASE = {
-  'Light map': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'&copy; OpenStreetMap &copy; CARTO | Data: ARC KH-CEC Database',
-    maxZoom:19, subdomains:'abcd'}),
   'Street map': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors | Data: ARC KH-CEC Database',
     maxZoom:19, subdomains:'abc'}),
+  'Light map': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CARTO | Data: ARC KH-CEC Database',
+    maxZoom:19, subdomains:'abcd'}),
   'Satellite (RGB)': L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics | Data: ARC KH-CEC Database',
@@ -400,11 +400,11 @@ const BASE = {
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
       attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics | Data: ARC KH-CEC Database',
       maxZoom:19}),
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{
-      maxZoom:19, subdomains:'abcd'})
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:19})
   ])
 };
-BASE['Light map'].addTo(map);
+BASE['Street map'].addTo(map);
 L.control.layers(BASE, null, {position:'topleft', collapsed:true}).addTo(map);
 
 /* Marker outlines are white, which disappears against dark satellite imagery.
